@@ -6,7 +6,7 @@
 #    By: user <user@student.42.fr>                  +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2020/04/14 11:38:28 by user              #+#    #+#              #
-#    Updated: 2020/04/14 16:49:39 by user             ###   ########.fr        #
+#    Updated: 2020/04/15 11:09:31 by user             ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,7 +15,8 @@ INCLUDES = -I includes -I libft
 SRS = 	srs/main.c \
 		srs/parsing.c \
 		srs/help_functions.c \
-		srs/placement.c
+		srs/placement.c \
+		srs/algorithm.c
 		
 LIBFT = -L ./libft -lft
 LIB_FILLLER = lib_filler.a

@@ -6,7 +6,7 @@
 /*   By: user <user@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/14 16:42:10 by user              #+#    #+#             */
-/*   Updated: 2020/04/14 18:20:58 by user             ###   ########.fr       */
+/*   Updated: 2020/04/15 12:13:17 by user             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,10 +35,10 @@ int intersects_correctly(t_game_info *game, int x, int y)
             if (game->piece[j][i] == '*')
             {
                 if (game->map[y + j][x + i] == game->enemy_char || \
-                    game->map[y + j][x + i] == game->enemy_char - 32)
+                    game->map[y + j][x + i] == game->enemy_char + 32)
                     return 0;
                 if (game->map[y + j][x + i] == game->player_char || \
-                    game->map[y + j][x + i] == game->player_char - 32)
+                    game->map[y + j][x + i] == game->player_char + 32)
                     ++count;
             }
             ++j;
@@ -72,6 +72,7 @@ void placement(t_game_info *game)
     int x;
 
     y = 0;
+    create_and_fill_hit_map(game);
     while (y < game->map_row)
     { 
         x = 0;
@@ -81,13 +82,16 @@ void placement(t_game_info *game)
             {
                 if (intersects_correctly(game, x, y))
                 {
-                    printf("%d %d\n", y, x);
-                    return ;
+                    // printf("%d %d\n", y, x);
+                    calculate_score(game, x, y);
+                    // printf("min score = %d\n", game->score_min);
+                    // printf("min y = %d, min x = %d\n", game->min_y, game->min_x);
                 }
             }            
             ++x;
         }
         ++y;
     }
-
+    printf("Final min score = %d\n", game->score_min);
+    printf(" Final min y = %d, min x = %d\n", game->min_y, game->min_x);
 }

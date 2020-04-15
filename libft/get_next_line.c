@@ -6,72 +6,129 @@
 /*   By: user <user@student.42.fr>                  +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2019/02/25 17:19:54 by vokrut            #+#    #+#             */
-/*   Updated: 2020/04/14 18:35:59 by user             ###   ########.fr       */
+/*   Updated: 2020/04/14 18:50:25 by user             ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-int		new_line_checker(int fd, char **line, char **joyce)
+int		len(char *s, int c)
 {
 	int		i;
-	char	*temp;
 
 	i = 0;
-	while (joyce[fd][i] != '\n' && joyce[fd][i] != '\0')
+	while (s[i] != '\0' && s[i] != (char)c)
 		i++;
-	if (joyce[fd][i] == '\n')
+	return (i);
+}
+
+char	*ft_str_ljoin(char **s1, char **s2)
+{
+	char	*without_leaks;
+
+	without_leaks = NULL;
+	if (!s1 && !s2)
+		return (NULL);
+	else if (!*s1 && *s2)
 	{
-		*line = ft_strsub(joyce[fd], 0, i);
-		temp = ft_strdup(joyce[fd] + i + 1);
-		ft_strdel(&joyce[fd]);
-		if (*temp)
-			joyce[fd] = ft_strdup(temp);
-		ft_strdel(&temp);
+		without_leaks = *s2;
+		*s2 = NULL;
+	}
+	else if (!*s2 && *s1)
+	{
+		without_leaks = *s1;
+		*s1 = NULL;
 	}
 	else
 	{
-		*line = ft_strdup(joyce[fd]);
-		ft_strdel(&joyce[fd]);
+		without_leaks = ft_strjoin(*s1, *s2);
+		ft_strdel(s1);
+		ft_strdel(s2);
 	}
-	return (1);
+	return (without_leaks);
 }
 
-void	temp_to_joyce(int fd, char **joyce, char *buff)
+void	get_tail(const int fd, char *buf, t_line **head)
 {
-	char *temp;
+	t_line	*tail;
+	t_line	*ptr;
+	char	*tmp;
+	int		start;
 
-	temp = ft_strjoin(joyce[fd], buff);
-	ft_strdel(&joyce[fd]);
-	joyce[fd] = ft_strdup(temp);
-	ft_strdel(&temp);
+	tail = NULL;
+	ptr = *head;
+	start = len(buf, '\n') + 1;
+	while (ptr && ptr->fd != fd)
+		ptr = ptr->next;
+	if (ptr == NULL || *head == NULL)
+	{
+		tail = (t_line*)malloc(sizeof(t_line) * 1);
+		tail->fd = fd;
+		tail->next = *head ? *head : NULL;
+		if (!(tail->str = ft_strsub(buf, start, ft_strlen(buf) - start)))
+			ft_memdel((void**)tail);
+		*head = tail;
+	}
+	if (ptr)
+	{
+		tmp = ptr->str;
+		ptr->str = ft_strsub(buf, start, ft_strlen(buf) - start);
+		tmp ? ft_strdel(&tmp) : 0;
+	}
+}
+
+int		reading(int fd, char **line, t_line **head)
+{
+	int		ret;
+	char	buf[BUFF_SIZE + 1];
+	char	*tmp;
+
+	while ((ret = read(fd, buf, BUFF_SIZE)) > 0)
+	{
+		buf[ret] = '\0';
+		if (ft_strchr(buf, '\n') != NULL)
+		{
+			tmp = ft_strsub(buf, 0, len(buf, '\n'));
+			*line = ft_str_ljoin(line, &tmp);
+			get_tail(fd, buf, head);
+			return (1);
+		}
+		else
+		{
+			tmp = ft_strdup(buf);
+			*line = ft_str_ljoin(line, &tmp);
+		}
+	}
+	if (ret < 0)
+		return (-1);
+	return (*line ? 1 : 0);
 }
 
 int		get_next_line(const int fd, char **line)
 {
-	int			readsize;
-	static char	*joyce[1024];
-	char		buff[BUFF_SIZE + 1];
+	static	t_line	*head = NULL;
+	t_line			*ptr;
 
-	if (!line || fd < 0)
+	if (fd < 0 || line == NULL)
 		return (-1);
 	*line = NULL;
-	while ((readsize = read(fd, buff, BUFF_SIZE)) > 0)
+	if (head)
 	{
-		if (joyce[fd] == NULL)
-			joyce[fd] = ft_strnew(0);
-		buff[readsize] = '\0';
-		temp_to_joyce(fd, joyce, buff);
-		if (ft_strchr(buff, '\n'))
-			break ;
+		ptr = head;
+		while (ptr && ptr->fd != fd)
+			ptr = ptr->next;
+		if (ptr && ptr->str && ft_strchr(ptr->str, '\n') != NULL)
+		{
+			*line = ft_strsub(ptr->str, 0, len(ptr->str, '\n'));
+			get_tail(fd, ptr->str, &head);
+			return (1);
+		}
+		if (ptr && ptr->str && !ft_strchr(ptr->str, '\n')
+			&& !ft_strequ(ptr->str, ""))
+		{
+			*line = ptr->str;
+			ptr->str = NULL;
+		}
 	}
-	if (readsize < 0)
-		return (-1);
-	if (readsize == 0 && joyce[fd] == NULL)
-	{
-		if (*line)
-			ft_strdel(line);
-		return (0);
-	}
-	return (new_line_checker(fd, line, joyce));
+	return (reading(fd, line, &head));
 }
